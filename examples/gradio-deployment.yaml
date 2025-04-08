@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: gradioapp
+  name: gradioapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gradioapp
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: gradioapp
+    spec:
+      containers:
+        - image: quay.io/rcarrata/gradioapp:v7
+          name: gradioapp
+          ports:
+            - containerPort: 7860
+          resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gradioapp
+  name: gradioapp-svc
+spec:
+  ports:
+  - port: 7860
+    protocol: TCP
+    targetPort: 7860
+  selector:
+    app: gradioapp
+  sessionAffinity: None
+  type: ClusterIP
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: gradioapp
+  labels:
+    app: gradioapp
+spec:
+  path: /
+  to:
+    kind: Service
+    name: gradioapp-svc
+    weight: 100
+  port:
+    targetPort: 7860
+  tls:
+    termination: edge
+  wildcardPolicy: None

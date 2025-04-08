@@ -1,0 +1,124 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"tekton.dev/v1","kind":"Pipeline","metadata":{"annotations":{},"name":"build-and-deploy","namespace":"pipelines-cpiedraf"},"spec":{"params":[{"description":"name of the deployment to be patched","name":"deployment-name","type":"string"},{"description":"url of the git repo for the code of deployment","name":"git-url","type":"string"},{"default":"master","description":"revision to be used from repo of the code for deployment","name":"git-revision","type":"string"},{"description":"image to be build from the code","name":"IMAGE","type":"string"}],"tasks":[{"name":"fetch-repository","params":[{"name":"URL","value":"$(params.git-url)"},{"name":"SUBDIRECTORY","value":""},{"name":"DELETE_EXISTING","value":"true"},{"name":"REVISION","value":"$(params.git-revision)"}],"taskRef":{"params":[{"name":"kind","value":"task"},{"name":"name","value":"git-clone"},{"name":"namespace","value":"openshift-pipelines"}],"resolver":"cluster"},"workspaces":[{"name":"output","workspace":"shared-workspace"}]},{"name":"build-image","params":[{"name":"IMAGE","value":"$(params.IMAGE)"}],"runAfter":["fetch-repository"],"taskRef":{"params":[{"name":"kind","value":"task"},{"name":"name","value":"buildah"},{"name":"namespace","value":"openshift-pipelines"}],"resolver":"cluster"},"workspaces":[{"name":"source","workspace":"shared-workspace"}]},{"name":"apply-manifests","runAfter":["build-image"],"taskRef":{"name":"apply-manifests"},"workspaces":[{"name":"source","workspace":"shared-workspace"}]},{"name":"update-deployment","params":[{"name":"deployment","value":"$(params.deployment-name)"},{"name":"IMAGE","value":"$(params.IMAGE)"}],"runAfter":["apply-manifests"],"taskRef":{"name":"update-deployment"}}],"workspaces":[{"name":"shared-workspace"}]}}
+  name: transform-and-update
+  namespace: pipelines-cpiedraf
+spec:
+  params:
+    - description: url of the git repo for the code of deployment
+      name: git-url
+      type: string
+    - default: master
+      description: revision to be used from repo of the code for deployment
+      name: git-revision
+      type: string
+    - description: image to be build from the code
+      name: IMAGE
+      type: string
+  tasks:
+    - name: fetch-repository
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: SUBDIRECTORY
+          value: ''
+        - name: DELETE_EXISTING
+          value: 'true'
+        - name: REVISION
+          value: $(params.git-revision)
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: fetch-model
+      runAfter:
+        - fetch-repository
+      params:
+        - name: MODEL_PATH
+          value: $(params.MODEL_PATH)
+      taskRef:
+        kind: Task
+        name: mcli
+      workspaces:
+        - name: work-storage
+          workspace: shared-storage
+    - name: transform-model
+      params:
+        - name: MODEL_PATH
+          value: $(params.MODEL_PATH)
+      runAfter:
+        - fetch-model
+      taskRef:
+        kind: Task
+        name: ssh
+      workspaces:
+         - name: ssh-directory
+           workspace: ssh-directory
+         - name: work-storage
+           workspace: shared-storage
+# Reference https://github.com/openshift-pipelines/task-containers/blob/main/docs/task-buildah.md
+    - name: build-image
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: CONTAINERFILE_PATH
+          value: $(params.CONTAINERFILE_PATH)
+        - name: SUBDIRECTORY
+          value: $(params.SUBDIRECTORY)
+        - name: TLS_VERIFY
+          value: false
+        - name: VERBOSE
+          value: false
+      runAfter:
+        - transform-model
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+# Reference https://github.com/openshift-pipelines/task-containers/blob/main/docs/task-skopeo-copy.md
+    - name: copy-image
+#### hay que crear el secreto con las credenciales para el registry, véase https://tekton.dev/docs/pipelines/auth/#configuring-docker-authentication-for-docker
+      params:
+        - name: SOURCE_IMAGE_URL
+          value: $(task.build-image.results.IMAGE_URL)
+        - name: DETINATION_IMAGE_URL
+          value: $(params.DESTINATION_IMAGE_URL)
+        - name: SRC_TLS_VERIFY
+          value: false
+        - name: DEST_TLS_VERIFY
+          value: false
+        - name: VERBOSE
+          value: false
+      runAfter:
+        - build-image
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: skopeo-copy
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+  workspaces:
+    - name: shared-workspace
+    - name: ssh-directory

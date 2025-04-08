@@ -1,0 +1,15 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: demostrador
+  namespace: ai-iniciative-4-signal-process
+spec:
+  to:
+    kind: Service
+    name: demostrador
+    weight: 100
+  port:
+    targetPort: 5000
+  tls:
+    termination: edge
+  wildcardPolicy: None

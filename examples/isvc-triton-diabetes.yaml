@@ -1,0 +1,22 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    openshift.io/display-name: triton-diabetes
+    serving.kserve.io/deploymentMode: ModelMesh
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: triton-diabetes
+  namespace: fpgpocnotebooks
+spec:
+  predictor:
+    model:
+      args: []
+      env: []
+      modelFormat:
+        name: onnx
+        version: "1"
+      runtime: triton
+      storage:
+        key: aistudiopoc
+        path: model/diabetes.onnx

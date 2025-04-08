@@ -1,0 +1,136 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: demostrador
+  namespace: ai-iniciative-4-signal-process
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: demostrador
+  template:
+    metadata:
+      labels:
+        app: demostrador
+    spec:
+      restartPolicy: Always
+      serviceAccountName: signal-processing
+      schedulerName: default-scheduler
+      enableServiceLinks: false
+      affinity: {}
+      terminationGracePeriodSeconds: 30
+      securityContext: {}
+      containers:
+        - resources:
+            limits:
+              cpu: '6'
+              memory: 24Gi
+              nvidia.com/gpu: '1'
+            requests:
+              cpu: '3'
+              memory: 24Gi
+              nvidia.com/gpu: '1'
+          readinessProbe:
+            httpGet:
+              path: /notebook/ai-iniciative-4-signal-process/signal-processing/api
+              port: notebook-port
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: demostrador
+          livenessProbe:
+            httpGet:
+              path: /notebook/ai-iniciative-4-signal-process/signal-processing/api
+              port: notebook-port
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: NOTEBOOK_ARGS
+              value: |-
+                --ServerApp.port=8888
+                                  --ServerApp.token=''
+                                  --ServerApp.password=''
+                                  --ServerApp.base_url=/notebook/ai-iniciative-4-signal-process/signal-processing
+                                  --ServerApp.quit_button=False
+                                  --ServerApp.tornado_settings={"user":"cluster-2dadmin","hub_host":"https://rhods-dashboard-redhat-ods-applications.apps.mlops.software.bl.platform","hub_prefix":"/projects/ai-iniciative-4-signal-process"}
+            - name: JUPYTER_IMAGE
+              value: 'image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/custom-signal-processing:latest'
+            - name: PIP_CERT
+              value: /etc/pki/tls/custom-certs/ca-bundle.crt
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/pki/tls/custom-certs/ca-bundle.crt
+            - name: SSL_CERT_FILE
+              value: /etc/pki/tls/custom-certs/ca-bundle.crt
+            - name: PIPELINES_SSL_SA_CERTS
+              value: /etc/pki/tls/custom-certs/ca-bundle.crt
+            - name: GIT_SSL_CAINFO
+              value: /etc/pki/tls/custom-certs/ca-bundle.crt
+            - name: NB_PREFIX
+              value: /notebook/ai-iniciative-4-signal-process/signal-processing
+          ports:
+            - name: notebook-port
+              containerPort: 8888
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: signal-processing
+              mountPath: /opt/app-root/src
+            - name: shm
+              mountPath: /dev/shm
+            - name: trusted-ca
+              readOnly: true
+              mountPath: /etc/pki/tls/custom-certs/ca-bundle.crt
+              subPath: ca-bundle.crt
+            - name: elyra-dsp-details
+              mountPath: /opt/app-root/runtimes
+          terminationMessagePolicy: File
+          envFrom:
+            - secretRef:
+                name: signal-processing-data-connection
+          image: 'image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/custom-signal-processing:latest'
+          workingDir: /opt/app-root/src
+      serviceAccount: signal-processing
+      volumes:
+        - name: signal-processing
+          persistentVolumeClaim:
+            claimName: signal-processing
+        - name: shm
+          emptyDir:
+            medium: Memory
+        - name: trusted-ca
+          configMap:
+            name: workbench-trusted-ca-bundle
+            items:
+              - key: ca-bundle.crt
+                path: ca-bundle.crt
+            defaultMode: 420
+            optional: true
+        - name: tls-certificates
+          secret:
+            secretName: signal-processing-tls
+            defaultMode: 420
+        - name: elyra-dsp-details
+          secret:
+            secretName: ds-pipeline-config
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+

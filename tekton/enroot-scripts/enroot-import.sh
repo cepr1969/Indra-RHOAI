@@ -7,7 +7,7 @@ shopt -s inherit_errexit
 set -eu -o pipefail
 
 source "$(dirname ${BASH_SOURCE[0]})/common.sh"
-source "$(dirname ${BASH_SOURCE[0]})/buildah-common.sh"
+source "$(dirname ${BASH_SOURCE[0]})/enroot-common.sh"
 
 function _enroot() {
     enroot \
@@ -20,8 +20,8 @@ function _enroot() {
 
 # making sure the required workspace "imagedir" is bounded, which means its volume is currently mounted
 # and ready to use
-phase "Inspecting source workspace '${WORKSPACES_IMAGEDIR_PATH}' (PWD='${PWD}')"
-[[ "${WORKSPACES_IMAGEDIR_BOUND}" != "true" ]] &&
+phase "Inspecting source workspace '${WORKSPACES_IMAGEDIRECTORY_PATH}' (PWD='${PWD}')"
+[[ "${WORKSPACES_IMAGEDIRECTORY_BOUND}" != "true" ]] &&
     fail "Workspace 'imagedir' is not bounded"
 
 # Handle optional dockerconfig secret
@@ -57,9 +57,8 @@ phase "Creating '${PARAMS_IMAGE_OUTPUT}' based on '${PARAMS_IMAGE}'"
 URI=`echo "${PARAMS_IMAGE}" | sed -e 's/\\//#/'`
 
 _enroot import \
+    --output "${PARAMS_IMAGE_OUTPUT}" \
     "docker://${URI}" \
-    --output "${PARAMS_IMAGE_OUTPUT}"
-
 
 
 #

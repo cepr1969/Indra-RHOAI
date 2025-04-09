@@ -1,17 +1,20 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  annotations:
-  namespace: pipelines-cpiedraf
+  name: superpod
 spec:
+  description: |
+    This pipeline builds a container image using buildah and enroot, and then runs it.
+    It uses the git-clone task to fetch the code from a git repository.
+    The pipeline uses a shared workspace to store the cloned code and the built image.
   params:
-    - description: image to be enrooted
+    - description: image to be "enrooted"
       name: IMAGE
       type: string
     - name : git-url
       type: string
       description: url of the git repo for the code of deployment
-    - default: master
+    - default: main
       description: revision to be used from repo of the code for deployment
       name: git-revision
       type: string
@@ -40,7 +43,7 @@ spec:
           - name: kind
             value: task
           - name: name
-            value: git-clone
+            value: git-clone-1-17-0
           - name: namespace
             value: openshift-pipelines
         resolver: cluster
@@ -52,11 +55,11 @@ spec:
     - name: build-image
       params:
         - name: IMAGE
-          value: $(params.IMAGE)
-        - name: CONTAINERFILE_PATH
-          value: $(params.CONTAINERFILE_PATH)
-        - name: SUBDIRECTORY
-          value: $(params.SUBDIRECTORY)
+          value: "$(params.DESTINATION_IMAGE_URL)"
+        - name: DOCKERFILE
+          value: "$(params.CONTAINERFILE_PATH)/Dockerfile"
+        - name: CONTEXT
+          value: "$(params.SUBDIRECTORY)"
         - name: TLS_VERIFY
           value: false
         - name: VERBOSE
@@ -75,28 +78,39 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
+        - name: dockerconfig
+          workspace: docker-config
     - name: enroot-image
 #### https://github.com/NVIDIA/enroot/blob/master/doc/usage.md
 #### la URI de la imagen es diferente a la de buildah cuando se usa docker
       params:
         - name: IMAGE
-          value: $(params.IMAGE)
+          value: $(params.DESTINATION_IMAGE_URL)
+        - name: IMAGE_OUTPUT
+          value: "$(params.IMAGE).sqfs"
+        - name: VERBOSE 
+          value: false
       runAfter:
         - build-image
       taskRef:
+        kind: Task
+        name: enroot
       workspaces:
-    - name: scp-and-run-image
+        - name: imagedirectory
+          workspace: shared-workspace
+        - name: dockerconfig
+          workspace: docker-config
+    - name: scp-run-collect
       params:
       runAfter:
         - enroot-image
       taskRef:
       workspaces:
-    - name: get-output
-      params:
-      runAfter:
-        - scp-and-run-image
-      taskRef:
-      workspaces:
+        - name: ssh-directory
+          workspace: ssh-directory
+        - name: workdir
+          workspace: shared-workspace
   workspaces:
     - name: shared-workspace
     - name: ssh-directory
+    - name: docker-config

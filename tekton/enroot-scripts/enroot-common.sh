@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+declare -rx PARAMS_IMAGE="${PARAMS_IMAGE:-}"
+declare -rx PARAMS_IMAGE_OUTPUT="${PARAMS_IMAGE_OUTPUT:-}"
+declare -rx PARAMS_TLS_VERIFY="${PARAMS_TLS_VERIFY:-}"
+declare -rx PARAMS_VERBOSE="${PARAMS_VERBOSE:-}"
+
+declare -rx WORKSPACES_IMAGEDIR_PATH="${WORKSPACES_IMAGEDIR_PATH:-}"
+declare -rx WORKSPACES_IMAGEDIR_BOUND="${WORKSPACES_IMAGEDIR_BOUND:-}"
+declare -rx WORKSPACES_DOCKERCONFIG_PATH="${WORKSPACES_DOCKERCONFIG_PATH:-}"
+declare -rx WORKSPACES_DOCKERCONFIG_BOUND="${WORKSPACES_DOCKERCONFIG_BOUND:-}"
+
+#
+# Asserting Environment
+#
+
+exported_or_fail \
+    WORKSPACES_IMAGEDIR_PATH \
+    PARAMS_IMAGE
+
+#
+# Verbose Output
+#
+
+if [[ "${PARAMS_VERBOSE}" == "true" ]]; then
+    set -x
+fi

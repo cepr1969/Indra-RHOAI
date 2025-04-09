@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: enroot
+spec:
+  description: A Task for enroot an image
+  params:
+    - default: 'false'
+      description: |
+        Log the executed commands.
+      name: VERBOSE
+      type: string
+    - name: IMAGE
+      type: string
+      description: |
+        The image to be enrooted in a registry accessible from the cluster. Format registry_name:registry_port/path/to/image:tag
+    - name: IMAGE_OUTPUT
+      type: string
+      description: |
+        The name for the enrootrd image, name.sqfs
+  results:
+    - description: |
+        A simple result
+      name: simpleresult
+      type: string
+  stepTemplate:
+    computeResources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    env:
+      - name: PARAMS_VERBOSE
+        value: $(params.VERBOSE)
+      - name: WORKSPACES_IMAGEDIRECTORY_BOUND
+        value: $(workspaces.imagedirectory.bound)
+      - name: WORKSPACES_IMAGEDIRECTORY_PATH
+        value: $(workspaces.imagedirectory.path)
+      - name: WORKSPACES_DOCKERCONFIG_BOUND
+        value: $(workspaces.dockerconfig.bound)
+      - name: WORKSPACES_DOCKERCONFIG_PATH
+        value: $(workspaces.dockerconfig.path)
+  steps:
+    - computeResources: {}
+      image: 'registry.mlops.software.bl.platform:8443/superpod/ubi9-enroot:latest'
+      name: prepare-and-run
+      script: |
+        set -e
+        printf '%s' "IyEvdXNyL2Jpbi9lbnYgYmFzaAojCiMgV3JhcHBlciBhcm91bmQgImVucm9vdCBpbXBvcnQiIHRvIGVucm9vdCBhIGNvbnRhaW5lciBpbWFnZS4KIwoKc2hvcHQgLXMgaW5oZXJpdF9lcnJleGl0CnNldCAtZXUgLW8gcGlwZWZhaWwKCnNvdXJjZSAiJChkaXJuYW1lICR7QkFTSF9TT1VSQ0VbMF19KS9jb21tb24uc2giCnNvdXJjZSAiJChkaXJuYW1lICR7QkFTSF9TT1VSQ0VbMF19KS9idWlsZGFoLWNvbW1vbi5zaCIKCmZ1bmN0aW9uIF9lbnJvb3QoKSB7CiAgICBlbnJvb3QgXAogICAgICAgICR7Kn0KfQoKIwojIFByZXBhcmUKIwoKIyBtYWtpbmcgc3VyZSB0aGUgcmVxdWlyZWQgd29ya3NwYWNlICJpbWFnZWRpciIgaXMgYm91bmRlZCwgd2hpY2ggbWVhbnMgaXRzIHZvbHVtZSBpcyBjdXJyZW50bHkgbW91bnRlZAojIGFuZCByZWFkeSB0byB1c2UKcGhhc2UgIkluc3BlY3Rpbmcgc291cmNlIHdvcmtzcGFjZSAnJHtXT1JLU1BBQ0VTX0lNQUdFRElSX1BBVEh9JyAoUFdEPScke1BXRH0nKSIKW1sgIiR7V09SS1NQQUNFU19JTUFHRURJUl9CT1VORH0iICE9ICJ0cnVlIiBdXSAmJgogICAgZmFpbCAiV29ya3NwYWNlICdpbWFnZWRpcicgaXMgbm90IGJvdW5kZWQiCgojIEhhbmRsZSBvcHRpb25hbCBkb2NrZXJjb25maWcgc2VjcmV0CmlmIFtbICIke1dPUktTUEFDRVNfRE9DS0VSQ09ORklHX0JPVU5EfSIgPT0gInRydWUiIF1dOyB0aGVuCgogICAgIyBpZiBjb25maWcuanNvbiBleGlzdHMgYXQgd29ya3NwYWNlIHJvb3QsIHdlIHVzZSB0aGF0CiAgICBpZiB0ZXN0IC1mICIke1dPUktTUEFDRVNfRE9DS0VSQ09ORklHX1BBVEh9L2NvbmZpZy5qc29uIjsgdGhlbgogICAgICAgIGV4cG9ydCBET0NLRVJfQ09ORklHPSIke1dPUktTUEFDRVNfRE9DS0VSQ09ORklHX1BBVEh9IgoKICAgICAgICAjIGVsc2Ugd2UgbG9vayBmb3IgLmRvY2tlcmNvbmZpZ2pzb24gYXQgdGhlIHJvb3QKICAgIGVsaWYgdGVzdCAtZiAiJHtXT1JLU1BBQ0VTX0RPQ0tFUkNPTkZJR19QQVRIfS8uZG9ja2VyY29uZmlnanNvbiI7IHRoZW4KICAgICAgICAjIGVuc3VyZSAuZG9ja2VyIGV4aXN0IGJlZm9yZSB0aGUgY29weWluZyB0aGUgY29udGVudAogICAgICAgIGlmIFsgISAtZCAiJEhPTUUvLmRvY2tlciIgXTsgdGhlbgogICAgICAgICAgIG1rZGlyIC1wICIkSE9NRS8uZG9ja2VyIgogICAgICAgIGZpCiAgICAgICAgY3AgIiR7V09SS1NQQUNFU19ET0NLRVJDT05GSUdfUEFUSH0vLmRvY2tlcmNvbmZpZ2pzb24iICIkSE9NRS8uZG9ja2VyL2NvbmZpZy5qc29uIgogICAgICAgIGV4cG9ydCBET0NLRVJfQ09ORklHPSIkSE9NRS8uZG9ja2VyIgoKICAgICAgICAjIG5lZWQgdG8gZXJyb3Igb3V0IGlmIG5laXRoZXIgZmlsZXMgYXJlIHByZXNlbnQKICAgIGVsc2UKICAgICAgICBlY2hvICJuZWl0aGVyICdjb25maWcuanNvbicgbm9yICcuZG9ja2VyY29uZmlnanNvbicgZm91bmQgYXQgd29ya3NwYWNlIHJvb3QiCiAgICAgICAgZXhpdCAxCiAgICBmaQpmaQoKCiMKIyBJbXBvcnQKIwoKcGhhc2UgIkNyZWF0aW5nICcke1BBUkFNU19JTUFHRV9PVVRQVVR9JyBiYXNlZCBvbiAnJHtQQVJBTVNfSU1BR0V9JyIKIyMjIyBoYXkgcXVlIHBhc2FyIGRlICR7UkVHSVNUUllfTkFNRX06JHtSRUdJU1RSWV9QT1JUfS8ke0lNQUdFX05BTUV9OiR7SU1BR0VfVEFHfSBhICR7UkVHSVNUUllfTkFNRX06JHtSRUdJU1RSWV9QT1JUfSMke0lNQUdFX05BTUV9OiR7SU1BR0VfVEFHfQpVUkk9YGVjaG8gIiR7UEFSQU1TX0lNQUdFfSIgfCBzZWQgLWUgJ3MvXFwvLyMvJ2AKCl9lbnJvb3QgaW1wb3J0IFwKICAgICJkb2NrZXI6Ly8ke1VSSX0iIFwKICAgIC0tb3V0cHV0ICIke1BBUkFNU19JTUFHRV9PVVRQVVR9IgoKCgojCiMgUmVzdWx0cwojCgpwaGFzZSAiUmVzdWx0cyIKZWNobyAtbiAiJHtQQVJBTVNfSU1BR0V9IiB8IHRlZSAke1JFU1VMVFNfSU1BR0VfVVJMX1BBVEh9CmVjaG8gLW4gIiR7UEFSQU1TX0lNQUdFX09VVFBVVH0iIHwgdGVlICR7UkVTVUxUU19JTUFHRV9ESUdFU1RfUEFUSH0K" |base64 -d >"/scripts/enroot-import.sh"
+        printf '%s' "IyEvdXNyL2Jpbi9lbnYgYmFzaAoKZGVjbGFyZSAtcnggUEFSQU1TX0lNQUdFPSIke1BBUkFNU19JTUFHRTotfSIKZGVjbGFyZSAtcnggUEFSQU1TX0lNQUdFX09VVFBVVD0iJHtQQVJBTVNfSU1BR0VfT1VUUFVUOi19IgpkZWNsYXJlIC1yeCBQQVJBTVNfVExTX1ZFUklGWT0iJHtQQVJBTVNfVExTX1ZFUklGWTotfSIKZGVjbGFyZSAtcnggUEFSQU1TX1ZFUkJPU0U9IiR7UEFSQU1TX1ZFUkJPU0U6LX0iCgpkZWNsYXJlIC1yeCBXT1JLU1BBQ0VTX0lNQUdFRElSX1BBVEg9IiR7V09SS1NQQUNFU19JTUFHRURJUl9QQVRIOi19IgpkZWNsYXJlIC1yeCBXT1JLU1BBQ0VTX0lNQUdFRElSX0JPVU5EPSIke1dPUktTUEFDRVNfSU1BR0VESVJfQk9VTkQ6LX0iCmRlY2xhcmUgLXJ4IFdPUktTUEFDRVNfRE9DS0VSQ09ORklHX1BBVEg9IiR7V09SS1NQQUNFU19ET0NLRVJDT05GSUdfUEFUSDotfSIKZGVjbGFyZSAtcnggV09SS1NQQUNFU19ET0NLRVJDT05GSUdfQk9VTkQ9IiR7V09SS1NQQUNFU19ET0NLRVJDT05GSUdfQk9VTkQ6LX0iCgojCiMgQXNzZXJ0aW5nIEVudmlyb25tZW50CiMKCmV4cG9ydGVkX29yX2ZhaWwgXAogICAgV09SS1NQQUNFU19JTUFHRURJUl9QQVRIIFwKICAgIFBBUkFNU19JTUFHRQoKIwojIFZlcmJvc2UgT3V0cHV0CiMKCmlmIFtbICIke1BBUkFNU19WRVJCT1NFfSIgPT0gInRydWUiIF1dOyB0aGVuCiAgICBzZXQgLXgKZmkK" |base64 -d >"/scripts/enroot-common.sh"
+        printf '%s' "IyEvdXNyL2Jpbi9lbnYgYmFzaAoKIyB0ZWt0b24ncyBob21lIGRpcmVjdG9yeQpkZWNsYXJlIC1yeCBURUtUT05fSE9NRT0iJHtURUtUT05fSE9NRTotL3Rla3Rvbi9ob21lfSIKCiMKIyBGdW5jdGlvbnMKIwoKZnVuY3Rpb24gZmFpbCgpIHsKICAgIGVjaG8gIkVSUk9SOiAkeyp9IiAyPiYxCiAgICBleGl0IDEKfQoKZnVuY3Rpb24gcGhhc2UoKSB7CiAgICBlY2hvICItLS0+IFBoYXNlOiAkeyp9Li4uIgp9CgojIGFzc2VydCBsb2NhbCB2YXJpYWJsZXMgYXJlIGV4cG9ydGVkIG9uIHRoZSBlbnZpcm9ubWVudApmdW5jdGlvbiBleHBvcnRlZF9vcl9mYWlsKCkgewogICAgZGVjbGFyZSAtYSBfcmVxdWlyZWRfdmFycz0iJHtAfSIKCiAgICBmb3IgdiBpbiAke19yZXF1aXJlZF92YXJzW0BdfTsgZG8KICAgICAgICBbWyAteiAiJHshdn0iIF1dICYmCiAgICAgICAgICAgIGZhaWwgIicke3Z9JyBlbnZpcm9ubWVudCB2YXJpYWJsZSBpcyBub3Qgc2V0ISIKICAgIGRvbmUKCiAgICByZXR1cm4gMAp9Cg==" |base64 -d >"/scripts/common.sh"
+        chmod +x /scripts/*.sh;echo "Running Script /scripts/enroot-import.sh";
+            /scripts/enroot-import.sh;
+      securityContext:
+        capabilities:
+          add:
+            - SETFCAP
+      volumeMounts:
+        - mountPath: /scripts
+          name: scripts-dir
+  volumes:
+    - emptyDir: {}
+      name: scripts-dir
+  workspaces:
+    - description: |
+        A directory for storing the .sqsh image.
+      name: imagedirectory
+    - description: An optional workspace that allows providing a .docker/config.json file for Buildah to access the container registry. The file should be placed at the root of the Workspace with name config.json or .dockerconfigjson.
+      name: dockerconfig
+      optional: true

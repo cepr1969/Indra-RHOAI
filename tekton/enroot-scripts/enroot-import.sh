@@ -24,6 +24,9 @@ phase "Inspecting source workspace '${WORKSPACES_IMAGEDIRECTORY_PATH}' (PWD='${P
 [[ "${WORKSPACES_IMAGEDIRECTORY_BOUND}" != "true" ]] &&
     fail "Workspace 'imagedir' is not bounded"
 
+mkdir -p ${WORKSPACES_IMAGEDIRECTORY_PATH}/tmp
+export ENROOT_TEMP_PATH="${WORKSPACES_IMAGEDIRECTORY_PATH}/tmp"
+
 # Handle optional dockerconfig secret
 if [[ "${WORKSPACES_DOCKERCONFIG_BOUND}" == "true" ]]; then
 
@@ -60,11 +63,3 @@ _enroot import \
     --output "${PARAMS_IMAGE_OUTPUT}" \
     "docker://${URI}" \
 
-
-#
-# Results
-#
-
-phase "Results"
-echo -n "${PARAMS_IMAGE}" | tee ${RESULTS_IMAGE_URL_PATH}
-echo -n "${PARAMS_IMAGE_OUTPUT}" | tee ${RESULTS_IMAGE_DIGEST_PATH}

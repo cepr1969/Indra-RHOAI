@@ -87,7 +87,7 @@ spec:
         - name: IMAGE
           value: $(params.DESTINATION_IMAGE_URL)
         - name: IMAGE_OUTPUT
-          value: "$(params.IMAGE).sqfs"
+          value: "$(params.IMAGE)"
         - name: VERBOSE 
           value: false
       runAfter:

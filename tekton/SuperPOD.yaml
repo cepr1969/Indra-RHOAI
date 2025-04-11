@@ -8,6 +8,10 @@ spec:
     It uses the git-clone task to fetch the code from a git repository.
     The pipeline uses a shared workspace to store the cloned code and the built image.
   params:
+    - default: 'true'
+      description: para saltar el enroot
+      name: skip-enroot
+      type: string
     - description: image to be "enrooted" and executed
       default: superpod.sqfs
       name: IMAGE
@@ -28,7 +32,7 @@ spec:
     - description: destination image url
       name: DESTINATION_IMAGE_URL
       type: string
-        - default: user
+    - default: user
       description: |
         User to be used for ssh connection
       name: SSH_USER
@@ -128,6 +132,10 @@ spec:
     - name: enroot-image
 #### https://github.com/NVIDIA/enroot/blob/master/doc/usage.md
 #### la URI de la imagen es diferente a la de buildah cuando se usa docker
+      when:
+      - input: "$(params.skip-enroot)"
+        operator: notin
+        values: ["true"]
       params:
         - name: IMAGE
           value: $(params.DESTINATION_IMAGE_URL)
@@ -149,9 +157,29 @@ spec:
       params:
         - name: IMAGE
           value: "$(params.IMAGE)"
+        - name: SSH_USER
+          value: $(params.SSH_USER)
+        - name: SSH_HOST
+          value: $(params.SSH_HOST)
+        - name: SSH_DIRECTORY
+          value: $(params.SSH_DIRECTORY)
+        - name: NODES
+          value: $(params.NODES)
+        - name: WORKERS
+          value: $(params.WORKERS)
+        - name: GPUS
+          value: $(params.GPUS)
+        - name: JOB_NAME
+          value: $(params.JOB_NAME)
+        - name: TIME
+          value: $(params.TIME)
+        - name: COMMAND
+          value: $(params.COMMAND)
       runAfter:
         - enroot-image
       taskRef:
+        kind: Task
+        name: superpod-ssh
       workspaces:
         - name: ssh-directory
           workspace: ssh-directory

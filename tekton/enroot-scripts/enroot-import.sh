@@ -60,6 +60,6 @@ phase "Creating '${PARAMS_IMAGE_OUTPUT}' based on '${PARAMS_IMAGE}'"
 URI=`echo "${PARAMS_IMAGE}" | sed -e 's/\\//#/'`
 
 _enroot import \
-    --output "${PARAMS_IMAGE_OUTPUT}" \
+    --output " ${WORKSPACES_IMAGEDIRECTORY_PATH}/${PARAMS_IMAGE_OUTPUT}" \
     "docker://${URI}" \
 

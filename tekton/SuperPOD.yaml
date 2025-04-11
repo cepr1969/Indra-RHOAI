@@ -8,7 +8,8 @@ spec:
     It uses the git-clone task to fetch the code from a git repository.
     The pipeline uses a shared workspace to store the cloned code and the built image.
   params:
-    - description: image to be "enrooted"
+    - description: image to be "enrooted" and executed
+      default: superpod.sqfs
       name: IMAGE
       type: string
     - name : git-url
@@ -26,6 +27,50 @@ spec:
       type: string
     - description: destination image url
       name: DESTINATION_IMAGE_URL
+      type: string
+        - default: user
+      description: |
+        User to be used for ssh connection
+      name: SSH_USER
+      type: string
+    - default: remote
+      description: |
+        Host to connect to
+      name: SSH_HOST
+      type: string
+    - default: ""
+      description: |
+        Remote directory where the image is copied to
+      name: SSH_DIRECTORY
+      type: string
+    - default: 1
+      description: |
+        Number of nodes to be used for the task.
+      name: NODES
+      type: string
+    - name: WORKERS
+      description: |
+        Worker nodes to be used for the task.
+      type: string
+    - default: 1
+      description: |
+        Number of GPUs to be used for the task.
+      name: GPUS
+      type: string
+    - default: myjob
+      description: |
+        Name of the job to be used for the task.
+      name: JOB_NAME
+      type: string
+    - default: 02:00:00
+      description: |
+        Time limit for the job to be used for the task.
+      name: TIME
+      type: string
+    - default: "echo 'Hello World'"
+      description: |
+        Command to be executed in the remote server.
+      name: COMMAND
       type: string
   tasks:
     - name: fetch-repository
@@ -102,13 +147,15 @@ spec:
           workspace: docker-config
     - name: scp-run-collect
       params:
+        - name: IMAGE
+          value: "$(params.IMAGE)"
       runAfter:
         - enroot-image
       taskRef:
       workspaces:
         - name: ssh-directory
           workspace: ssh-directory
-        - name: workdir
+        - name: imagedirectory
           workspace: shared-workspace
   workspaces:
     - name: shared-workspace

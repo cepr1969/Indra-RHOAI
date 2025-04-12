@@ -47,3 +47,19 @@ De momento lo tenemos con dos pipelines por que necesitan privilegios distintos:
         - `shared-workspace`: PersistentVolumeClaim donde se copia la imagen y los resultados
         - `ssh-directory`: secreto con el directorio .ssh para acceder al SuperPOD, por ejemplo `ssh-directory-cpiedraf`
         - `docker-config`: secreto con el .docker/config.json con las credenciales para hacer a la imagen en el repositorio, por ejmplo `docker-credentials`
+
+Para crear el secret para el ssh tenemos que hacer, por ejemplo:
+```bash
+oc create secret generic ssh-directory-helper \
+    --namespace superpod-integration \
+	--from-file="config=${HOME}/.ssh/config" \
+	--from-file="authorized_keys=${HOME}/.ssh/authorized_keys" \
+    --from-file="id_rsa=${HOME}/.ssh/helper_rsa" \
+    --from-file="known_hosts=${HOME}/.ssh/known_hosts"
+```
+El secret para acceder al registry es
+```bash
+oc create secret docker-registry docker-credentials \
+    --namespace superpod-integration \
+    --from-file=${HOME}/.docker/config.json
+```

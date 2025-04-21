@@ -1,13 +1,19 @@
 #!/usr/bin/env sh
 
+shopt -s inherit_errexit
+set -eu -o pipefail
+
+source $(CDPATH= cd -- "$(dirname -- ${0})" && pwd)/common.sh
+
 #
 # Image is already created
 # ${PARAMS_IMAGE}
 #
+phase "scp image to remote server"
+scp -o StrictHostKeyChecking=no ${WORKSPACES_IMAGEDIRECTORY_PATH}/${PARAMS_IMAGE} ${SSH_USER}@${SSH_HOST}:${SSH_DIRECTORY}
 
-scp ${PARAMS_IMAGE} ${SSH_USER}@${SSH_HOST}:${SSH_DIRECTORY}
-
-cat > deploy.sh <<EOF
+phase "prepare script"
+cat > ${WORKSPACES_IMAGEDIRECTORY_PATH}/deploy.sh <<EOF
 # Now we neeed to create a script to execute the image
 
 # Configuración de parámetros
@@ -37,9 +43,11 @@ srun -K \
     --pty /bin/bash -c "\${COMMAND}"
 EOF
 
+phase
 chmod +x deploy.sh
 
 # copy to remote server
-scp deploy.sh ${SSH_USER}@${SSH_HOST}:${SSH_DIR}
+scp -o StrictHostKeyChecking=no ./deploy.sh ${SSH_USER}@${SSH_HOST}:${SSH_DIR}
 
-ssh ${SSH_USER}@${SSH_HOST} "chmod a+x ./deploy.sh && ./deploy.sh"
+phase "execute script on remote server"
+ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "chmod a+x ./deploy.sh && ./deploy.sh"

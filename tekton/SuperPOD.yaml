@@ -52,6 +52,11 @@ spec:
         Number of nodes to be used for the task.
       name: NODES
       type: string
+    - name: TASKS
+      description: |
+        Number of tasks to be used for the task.
+      type: string
+      default: 1
     - name: WORKERS
       description: |
         Worker nodes to be used for the task.
@@ -165,6 +170,8 @@ spec:
           value: $(params.SSH_DIRECTORY)
         - name: NODES
           value: $(params.NODES)
+        - name: TASKS
+          value: $(params.TASKS)
         - name: WORKERS
           value: $(params.WORKERS)
         - name: GPUS

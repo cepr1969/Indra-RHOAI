@@ -9,6 +9,8 @@ set -eu -o pipefail
 source "$(dirname ${BASH_SOURCE[0]})/common.sh"
 source "$(dirname ${BASH_SOURCE[0]})/enroot-common.sh"
 
+# Ref: https://github.com/NVIDIA/enroot/
+
 function _enroot() {
     enroot \
         ${*}
@@ -58,6 +60,8 @@ fi
 phase "Creating '${PARAMS_IMAGE_OUTPUT}' based on '${PARAMS_IMAGE}'"
 #### hay que pasar de ${REGISTRY_NAME}:${REGISTRY_PORT}/${IMAGE_NAME}:${IMAGE_TAG} a ${REGISTRY_NAME}:${REGISTRY_PORT}#${IMAGE_NAME}:${IMAGE_TAG}
 URI=`echo "${PARAMS_IMAGE}" | sed -e 's/\\//#/'`
+echo "${WORKSPACES_IMAGEDIRECTORY_PATH}/${PARAMS_IMAGE_OUTPUT}"
+ls -lh "${WORKSPACES_IMAGEDIRECTORY_PATH}"
 
 _enroot import \
     --output "${WORKSPACES_IMAGEDIRECTORY_PATH}/${PARAMS_IMAGE_OUTPUT}" \

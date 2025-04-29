@@ -29,10 +29,9 @@ COMMAND="${PARAMS_COMMAND}"
 # Ejecutar el comando srun
 srun -K \
     --container-mounts=/home/${SSH_USER}:/home/${SSH_USER} \
-    --container-mounts=/etc/ssh/host*:/etc/ssh/ \
     --no-container-remap-root \
     --container-workdir=$(pwd) \
-    --container-image="${PARAMS_IMAGE}" \
+    --container-image="${SSH_DIRECTORY}/${PARAMS_IMAGE}" \
     --ntasks="\$TASKS" \
     --nodes="\$NODES" \
     --partition "\$PARTITION" \
@@ -43,11 +42,11 @@ srun -K \
     --pty /bin/bash -c "\${COMMAND}"
 EOF
 
-phase
-chmod +x deploy.sh
+phase "make script executable"
+chmod +x ${WORKSPACES_IMAGEDIRECTORY_PATH}/deploy.sh
 
-# copy to remote server
-scp -o StrictHostKeyChecking=no ./deploy.sh ${SSH_USER}@${SSH_HOST}:${SSH_DIR}
+phase "scp script to theremote server"
+scp -o StrictHostKeyChecking=no ${WORKSPACES_IMAGEDIRECTORY_PATH}/deploy.sh ${SSH_USER}@${SSH_HOST}:${SSH_DIRECTORY}
 
 phase "execute script on remote server"
-ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "chmod a+x ./deploy.sh && ./deploy.sh"
+ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} \"chmod a+x ${SSH_DIRECTORY}/deploy.sh && ${SSH_DIRECTORY}/deploy.sh\"
